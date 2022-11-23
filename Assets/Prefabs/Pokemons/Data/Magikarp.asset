@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ee51dec193ce9e0408e50a6ffb53f221, type: 3}
+  m_Name: Magikarp
+  m_EditorClassIdentifier: 
+  Id: 129
+  Name: Magikarp
+  Types: 0b000000
+  Abilities: []
+  Stats:
+  - name: hp
+    value: 20
+    effort: 0
+  - name: attack
+    value: 10
+    effort: 0
+  - name: defense
+    value: 55
+    effort: 0
+  - name: special-attack
+    value: 15
+    effort: 0
+  - name: special-defense
+    value: 20
+    effort: 0
+  - name: speed
+    value: 80
+    effort: 1
+  Moves:
+  - {fileID: 11400000, guid: 9db300fa7f88ed842a4d18f6018373ac, type: 2}
+  - {fileID: 11400000, guid: ae8d4513d3e8d4b4d8ecc171d1152d00, type: 2}
+  - {fileID: 0}
+  - {fileID: 11400000, guid: 1c283dabfd193734b99257280cd905c7, type: 2}
+  - {fileID: 0}
+  CaptureRate: 255
+  Model: {fileID: 2928968847188664924, guid: 9270162c59d389c43a185834e351c227, type: 3}
