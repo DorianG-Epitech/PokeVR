@@ -2,7 +2,7 @@ using Mirror;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Collections;
-using Facebook.WitAi;
+// using Facebook.WitAi;
 
 public class PlayerBattle : NetworkBehaviour
 {
