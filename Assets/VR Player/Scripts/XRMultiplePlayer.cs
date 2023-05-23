@@ -8,6 +8,7 @@ public class XRMultiplePlayer : NetworkBehaviour
     public MonoBehaviour[] ComponentsToDisable;
     public GameObject[] ObjectsToDisable;
     public GameObject[] ObjectsToRename;
+    public GameObject[] PlayerModels;
     public GameObject PlayerCamera;
 
     private void Start()
@@ -33,6 +34,15 @@ public class XRMultiplePlayer : NetworkBehaviour
 
             DestroyImmediate(PlayerCamera.GetComponent<AudioListener>());
             DestroyImmediate(PlayerCamera.GetComponent<Camera>());
+        }
+
+        if (isLocalPlayer)
+        {
+            foreach (var obj in PlayerModels)
+            {
+                if (obj != null)
+                    obj.SetActive(false);
+            }
         }
     }
 }

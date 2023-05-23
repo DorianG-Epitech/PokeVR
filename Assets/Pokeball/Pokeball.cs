@@ -1,11 +1,13 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
+using UnityEngine.AI;
 using UnityEngine;
+using Mirror;
 
 [RequireComponent(typeof(Rigidbody), typeof(Collider), typeof(Animator))]
-public class Pokeball : MonoBehaviour
+public class Pokeball : NetworkBehaviour
 {
+    [SyncVar] public string ownerId;
     public float DebugCaptureRate = 0.5f;
     public float RotationSpeed = 500f;
     public float PositionSpeed = 500f;
@@ -20,9 +22,13 @@ public class Pokeball : MonoBehaviour
     private Animator _animator;
     private Quaternion _rotationGoal;
     private Vector3 _positionGoal;
+    [SyncVar]
     private Transform _capturedPokemon = null;
+    [SyncVar]
     private Vector3 _capturedPokemonScale;
+    [SyncVar]
     private Vector3 _capturedPokemonPosition;
+    [SyncVar]
     private Quaternion _capturedPokemonRotation;
     private bool _checkingCapture = false;
     private int _remainingWiggle = 0;
@@ -46,16 +52,31 @@ public class Pokeball : MonoBehaviour
             _capturedPokemon.transform.parent = transform;
             _rigidbody.isKinematic = false;
             _rigidbody.useGravity = true;
+            _rigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         }
         if (_brokeAnimation == true)
         {
             bool brokeAnimationFinished = PokemonBroke();
             if (brokeAnimationFinished)
             {
-                Destroy(gameObject);
+                if (_capturedPokemon.GetComponentInChildren<NavMeshAgent>())
+                {
+                    _capturedPokemon.GetComponentInChildren<NavMeshAgent>().enabled = true;
+                    _capturedPokemon.GetComponentInChildren<NavMeshAgent>().isStopped = false;
+                }
+                DestroyPokeball();
             }
         }
     }
+
+    [Command]
+    private void MovePokemonServer(GameObject pokemon, Vector3 capturedPokemonScale, Vector3 capturedPokemonPosition, float totalDistance, float pokemonPositionSpeed)
+    {
+        // _capturedPokemon.position = Vector3.MoveTowards(_capturedPokemon.position, transform.position, PokemonPositionSpeed * Time.deltaTime);
+        // _capturedPokemon.localScale = _capturedPokemonScale * Mathf.Clamp(((_totalDistance - Vector3.Distance(_capturedPokemonPosition, _capturedPokemon.position)) / _totalDistance), 0f, 1f);
+        pokemon.transform.position = Vector3.MoveTowards(pokemon.transform.position, transform.position, pokemonPositionSpeed * Time.deltaTime);
+        pokemon.transform.localScale = capturedPokemonScale * Mathf.Clamp(((totalDistance - Vector3.Distance(capturedPokemonPosition, pokemon.transform.position)) / totalDistance), 0f, 1f);
+    } 
 
     private bool CatchPokemonInAir()
     {
@@ -72,8 +93,7 @@ public class Pokeball : MonoBehaviour
         }
         if (_capturedPokemon.position != transform.position)
         {
-            _capturedPokemon.position = Vector3.MoveTowards(_capturedPokemon.position, transform.position, PokemonPositionSpeed * Time.deltaTime);
-            _capturedPokemon.localScale = _capturedPokemonScale * Mathf.Clamp(((_totalDistance - Vector3.Distance(_capturedPokemonPosition, _capturedPokemon.position)) / _totalDistance), 0f, 1f);
+            MovePokemonServer(_capturedPokemon.gameObject, _capturedPokemonScale, _capturedPokemonPosition, _totalDistance, PokemonPositionSpeed);
             animationInAirEnded = false;
         }
         return animationInAirEnded;
@@ -95,25 +115,61 @@ public class Pokeball : MonoBehaviour
         return animationBrokeEnded;
     }
 
-    private void StartPokemonCapture(Transform pokemon)
+    private Transform GetRootParent(Transform pokemon)
     {
+        
+        if (pokemon.parent == null)
+            return pokemon;
+        Transform parent = pokemon.parent;
+
+        while (parent != null)
+        {
+            pokemon = parent;
+            parent = pokemon.parent;
+        }
+        return pokemon;
+    }
+
+    private void DeactivateCollisions(Transform pokemon)
+    {
+        foreach (var collider in pokemon.GetComponentsInChildren<Collider>())
+        {
+            Physics.IgnoreCollision(collider, GetComponent<Collider>());
+        }
+    }
+
+    [Command]
+    private void StartPokemonCaptureServer(GameObject pokemon)
+    {
+        if (pokemon && pokemon.GetComponentInChildren<NavMeshAgent>()) 
+        {
+            pokemon.GetComponentInChildren<NavMeshAgent>().isStopped = true;
+            pokemon.GetComponentInChildren<NavMeshAgent>().enabled = false;
+        }
+    }
+
+    private void StartPokemonCapture(Transform basePokemon)
+    {
+        Transform pokemon = GetRootParent(basePokemon);
+        DeactivateCollisions(pokemon);
         _rigidbody.isKinematic = true;
         _rigidbody.useGravity = false;
+        GetComponent<NetworkAnimator>().SetTrigger("Catch");
+        // _animator.SetTrigger("Catch");
         _rotationGoal = Quaternion.LookRotation((transform.position - pokemon.position).normalized);
         _positionGoal = transform.position - (pokemon.position - transform.position).normalized * BounceDistance;
-        _animator.SetTrigger("Catch");
         _capturedPokemon = pokemon;
         _capturedPokemonPosition = _capturedPokemon.position;
         _capturedPokemonScale = _capturedPokemon.localScale;
         _capturedPokemonRotation = _capturedPokemon.rotation;
         _totalDistance = Vector3.Distance(_positionGoal, _capturedPokemonPosition);
+        StartPokemonCaptureServer(_capturedPokemon.gameObject);
     }
 
     private void CheckIfCaught()
     {
         float captureChance = UnityEngine.Random.Range(0f, 1f);
         float wigglesDiv = captureChance / (1 - DebugCaptureRate);
-        Debug.Log($"CapRate = {DebugCaptureRate} Inverse = {1 / DebugCaptureRate} Wiggles = {wigglesDiv} CaptureChance = {captureChance}");
 
         if (wigglesDiv < 0.25f)
             _remainingWiggle = 0;
@@ -124,7 +180,6 @@ public class Pokeball : MonoBehaviour
         else
             _remainingWiggle = 3;
         _isCaptured = wigglesDiv > 1;
-        Debug.Log(_remainingWiggle);
         OnWiggleEnd();
     }
 
@@ -138,8 +193,8 @@ public class Pokeball : MonoBehaviour
     {
         if (_capturedPokemon == null && other.gameObject.layer == LayerMask.NameToLayer("Pokemon"))
         {
+            SoundManager.PlaySound(SoundManager.Sound.PokeballHit, other.transform.position);
             StartPokemonCapture(other.transform);
-            Physics.IgnoreCollision(other.collider, GetComponent<Collider>());
         }
         if (other.gameObject.layer == LayerMask.NameToLayer("Ground"))
         {
@@ -155,7 +210,9 @@ public class Pokeball : MonoBehaviour
                 }));
             }
             else
-                Destroy(gameObject);
+            {
+                DestroyPokeball();
+            }
         }
     }
 
@@ -165,28 +222,45 @@ public class Pokeball : MonoBehaviour
         {
             _remainingWiggle--;
             _animator.SetTrigger("Wiggle");
+            SoundManager.PlaySound(SoundManager.Sound.PokeballWiggle, _capturedPokemon.transform.position);
             return;
         }
         if (_isCaptured)
         {
-            Debug.Log("Pokemon Captured !");
+            Pokemon poke = _capturedPokemon.GetComponentInChildren<Pokemon>();
+            PokemonData data = poke.GetData();
+            StarsParticles.transform.parent = null;
+            Debug.LogError("Capturemanager: " + GameObject.FindObjectOfType<CaptureManager>());
+            if (GameObject.FindObjectOfType<CaptureManager>())
+                GameObject.FindObjectOfType<CaptureManager>().AddPokemon(ownerId, data, poke);
+            // SoundManager.PlaySound(SoundManager.Sound.PokemonCatch, capturedPokemon.transform.position);
+            Destroy(_capturedPokemon.gameObject);
+            DestroyPokeball();
             StarsParticles.Play();
         }
         else
         {
-            Debug.Log("Oh no, the pokemon broke free !");
             _capturedPokemon.transform.parent = null;
             foreach (var renderer in PokeballRenderers)
                 renderer.enabled = false;
-            // _capturedPokemon.localScale = _capturedPokemonScale;
-            // _capturedPokemon.position = _capturedPokemonPosition;
-            // _capturedPokemon = null;
             BrokeParticles.transform.parent = null;
             _capturedPokemon.rotation = _capturedPokemonRotation;
             BrokeParticles.Play();
             _brokeAnimation = true;
         }
 
+    }
+
+    private void DestroyPokeball()
+    {
+        DestroyPokeballServer();
+    }
+
+    [Command]
+    private void DestroyPokeballServer()
+    {
+        NetworkServer.Destroy(gameObject);
+        Destroy(gameObject);
     }
 
     private void PlayCaptureParticles()

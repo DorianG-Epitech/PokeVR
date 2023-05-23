@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &3161750680990158114
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3161750680990158112}
+  - component: {fileID: 3161750680990158115}
+  m_Layer: 0
+  m_Name: AudioAssets
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3161750680990158112
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3161750680990158114}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3161750680990158115
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3161750680990158114}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30404d474d9a7bd46b389a3ee78622c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  soundAudioClipArray:
+  - sound: 0
+    audioClip: {fileID: 8300000, guid: 431e782e9eb569b4ebd47243d9d8c930, type: 3}
+  - sound: 1
+    audioClip: {fileID: 8300000, guid: 8a205b9506f33b244ad9ca471da51bb0, type: 3}
+  - sound: 2
+    audioClip: {fileID: 8300000, guid: b1181af06c8d5d145b5d2e8e31540b5c, type: 3}
+  - sound: 3
+    audioClip: {fileID: 8300000, guid: 25660143f13aae44ca6d8465e618ffc8, type: 3}
+  - sound: 4
+    audioClip: {fileID: 8300000, guid: f2ec739635a67884485b3dd17b0febc1, type: 3}
+  - sound: 5
+    audioClip: {fileID: 8300000, guid: 3f096b07420047647a1e72c822792afe, type: 3}
+  - sound: 6
+    audioClip: {fileID: 8300000, guid: 50d1f6c0c1b84774194554b3958de70c, type: 3}
+  - sound: 7
+    audioClip: {fileID: 8300000, guid: 7748a5a1aea184c4e9d07cf287f89cb7, type: 3}
+  - sound: 8
+    audioClip: {fileID: 8300000, guid: 140ac3cbf264cfd4d8553487c3bf2f11, type: 3}
+  - sound: 9
+    audioClip: {fileID: 8300000, guid: 4348c203a226e3c4aa21f98435b42caf, type: 3}

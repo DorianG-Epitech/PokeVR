@@ -6,7 +6,6 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using UnityEngine;
 
-[RequireComponent(typeof(OVRInputModule))]
 public class XRSwitchHand : MonoBehaviour
 {
     public LaserPointer Laser;

@@ -6,10 +6,9 @@ public class SpawnManager : NetworkBehaviour
 {
     public static SpawnManager Instance;
 
-    public List<SpawnZone> spawnZones;
-    public List<GameObject> objects;
+    public List<Zone> zones;
     public List<PokemonDataSO> existingPokemons;
-    public Pokemon pokemonLoader;
+    public Pokemon pokemonPrefab;
 
     private void Awake()
     {
@@ -21,21 +20,21 @@ public class SpawnManager : NetworkBehaviour
 
     void Start()
     {
-        Invoke("SpawnPokemons", 5f);
+        SpawnPokemons();
     }
 
     void SpawnPokemons()
     {
         if (!isServer) return;
 
-        foreach (SpawnZone zone in spawnZones) {
-            List<PokemonDataSO> zonePokemons = existingPokemons.FindAll(x => CheckPokemonType(zone.zoneTypes, x.Types) == true);
+        foreach (Zone zone in zones) {
+            List<PokemonDataSO> pokemonsToSpawnInZone = existingPokemons.FindAll(x => CheckPokemonType(zone.zoneTypes, x.Types) == true);
 
-            if (zonePokemons.Count == 0) continue;
+            if (pokemonsToSpawnInZone.Count == 0) continue;
 
             zone.InitSpawn();
             //TODO: faudra regarder pokemonsTypes dans chaque zone pour savoir quels pokemons envoyer à une zone
-            zone.SpawnPokemons(zonePokemons, pokemonLoader);
+            zone.SpawnPokemons(pokemonsToSpawnInZone);
         }
     }
 

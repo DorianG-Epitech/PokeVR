@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Networking;
@@ -27,6 +26,9 @@ public class PokemonApi : MonoBehaviour
     public string MovesFolder = "Assets/Prefabs/Pokemons/Moves/";
     public string PokemonsFolder = "Assets/Prefabs/Pokemons/Data/";
     public string ModelsFolder = "Assets/Prefabs/Pokemons/Models/";
+    public string SpritesFolder = "Assets/Textures/Pokemons/";
+
+    public string[] FlyingPokemon;
 
     public void StartLoadPokemonsData()
     {
@@ -77,21 +79,35 @@ public class PokemonApi : MonoBehaviour
     {
         dynamic pokemonData = JObject.Parse(pokemonJson[0].Replace("\\n", ""));
         PokemonDataSO pokemon = ScriptableObject.CreateInstance<PokemonDataSO>();
+        
+        var prefabName = CapitalizeFirstLetter((string)pokemonData.name);
 
-        // Pokemon
-        pokemon.Id   = pokemonData.id;
-        pokemon.Name = CapitalizeFirstLetter((string)pokemonData.name);
+        // Pokemon Id
+        pokemon.Id = pokemonData.id;
 
         // Model
-        string[] modelPath = AssetDatabase.FindAssets(pokemon.Name + " t:prefab", new[] { ModelsFolder });
+        string[] modelPath = AssetDatabase.FindAssets(prefabName + " t:prefab", new[] { ModelsFolder });
         if (modelPath.Length != 0)
         {
             var path = AssetDatabase.GUIDToAssetPath(modelPath[0]);
-            Debug.Log(path);
             if (path != null && path != "")
             {
-                UnityEngine.Object model = AssetDatabase.LoadAssetAtPath(path, typeof(UnityEngine.Object));
+                UnityEngine.GameObject model = AssetDatabase.LoadAssetAtPath(path, typeof(UnityEngine.Object)) as GameObject;
                 pokemon.Model = model;
+            }
+        }
+        else
+            return;
+
+        // Sprite
+        string[] spritePath = AssetDatabase.FindAssets(prefabName + " t:texture2D", new[] { SpritesFolder });
+        if (spritePath.Length != 0)
+        {
+            var path = AssetDatabase.GUIDToAssetPath(spritePath[0]);
+            if (path != null && path != "")
+            {
+                Sprite sprite = AssetDatabase.LoadAssetAtPath(path, typeof(Sprite)) as Sprite;
+                pokemon.Sprite = sprite;
             }
         }
         else
@@ -128,27 +144,44 @@ public class PokemonApi : MonoBehaviour
                 if (path != null && path != "")
                 {
                     MoveDataSO move = (MoveDataSO)AssetDatabase.LoadAssetAtPath(path, typeof(MoveDataSO));
-                    moves.Add(move);
+                    if (move) moves.Add(move);
                 }
             }
         }
         pokemon.Moves = moves.ToArray();
 
-        // Capture Rate
         dynamic pokemonSpeciesData = JObject.Parse(pokemonJson[1].Replace("\\n", ""));
+        
+        // Capture Rate
         pokemon.CaptureRate = pokemonSpeciesData.capture_rate;
 
+        // Name
+        JArray names = pokemonSpeciesData.names;
+        pokemon.Name = names
+            .Children<JObject>()
+            .FirstOrDefault(obj => obj["language"]["name"].ToString() == "fr")["name"]
+            .ToString();
+
+        // IsFlying
+        if (FlyingPokemon.Contains(prefabName)) pokemon.IsFlying = true;
+
         // Save the new scriptable object
-        AssetDatabase.CreateAsset(pokemon, $"{PokemonsFolder}{pokemon.Name}{".asset"}");
+        AssetDatabase.CreateAsset(pokemon, $"{PokemonsFolder}{prefabName}{".asset"}");
         AssetDatabase.SaveAssets();
 
-        Debug.Log($"{"Create new pokemon : "}{pokemon.Name}");
+        Debug.Log($"{"Create new pokemon : "}{prefabName}");
     }
 
     private void ParseMove(string moveJson)
     {
         dynamic moveData = JObject.Parse(moveJson.Replace("\\n", ""));
         MoveDataSO move = ScriptableObject.CreateInstance<MoveDataSO>();
+
+        JArray names = moveData.names;
+        var prefabName = names
+            .Children<JObject>()
+            .FirstOrDefault(obj => obj["language"]["name"].ToString() == "en")["name"]
+            .ToString();
 
         // Move
         move.Id           = moveData.id;
@@ -161,16 +194,15 @@ public class PokemonApi : MonoBehaviour
         move.Target       = GetEnumValue<MoveDataSO.MoveTarget>(ToCamelCase((string)moveData.target.name));
         move.Type         = GetEnumValue<PokemonConstants.Types>(ToCamelCase((string)moveData.type.name));
 
-        JArray names = moveData.names;
         move.Name = names
             .Children<JObject>()
-            .FirstOrDefault(obj => obj["language"]["name"].ToString() == "en")["name"]
+            .FirstOrDefault(obj => obj["language"]["name"].ToString() == "fr")["name"]
             .ToString();
 
         JArray flavorTextEntries = moveData.flavor_text_entries;
         move.Description = flavorTextEntries
             .Children<JObject>()
-            .FirstOrDefault(obj => obj["language"]["name"].ToString() == "en")["flavor_text"]
+            .FirstOrDefault(obj => obj["language"]["name"].ToString() == "fr")["flavor_text"]
             .ToString();
 
         // Metadata
@@ -202,7 +234,7 @@ public class PokemonApi : MonoBehaviour
         AssetDatabase.CreateAsset(move, $"{MovesFolder}{moveData.name}{".asset"}");
         AssetDatabase.SaveAssets();
 
-        Debug.Log($"{"Create new move : "}{move.Name}");
+        Debug.Log($"{"Create new move : "}{prefabName}");
     }
 
     private IEnumerator GetRequest(string uri, Action<String> callback)
